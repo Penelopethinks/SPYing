@@ -783,10 +783,13 @@ label {
       <button class="btn" type="submit">Save Identity & Continue</button>
     </form>
     <form id="loginForm" class="hidden">
-      <label for="loginPass">Agency passcode</label>
-      <input id="loginPass" class="field" type="password"
-        placeholder="Enter passcode" autocomplete="current-password" required>
-      <button class="btn" type="submit">Enter Headquarters</button>
+      <p class="muted">Use an email and password to create an account or sign in.</p>
+      <label for="authEmail">Email</label>
+      <input id="authEmail" class="field" type="email" autocomplete="email" required>
+      <label for="authPassword">Password</label>
+      <input id="authPassword" class="field" type="password" minlength="8" autocomplete="current-password" required>
+      <button class="btn" type="submit">Sign In</button>
+      <button class="btn secondary" type="button" id="createAccountBtn">Create Account</button>
     </form>
     <div id="loginError" class="login-error"></div>
     <div class="small muted">Your identity is saved in this browser on this device.</div>
@@ -1113,6 +1116,7 @@ label {
 <div id="toastRoot"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
 /*
@@ -1227,12 +1231,13 @@ function showPage(page) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function logout() {
+async function logout() {
   archiveUnlocked = false;
+  await supabaseClient.auth.signOut();
   document.getElementById("app").classList.add("hidden");
   document.getElementById("bottomNav").classList.add("hidden");
   document.getElementById("login").classList.remove("hidden");
-  document.getElementById("loginPass").value = "";
+  document.getElementById("authPassword").value = "";
 }
 
 // First visit: collect an agent identity before showing the passcode form.
@@ -1260,21 +1265,51 @@ setupForm.addEventListener("submit", e => {
 });
 showEntryStep();
 
-document.getElementById("loginForm").addEventListener("submit", e => {
-  e.preventDefault();
+const SUPABASE_URL = "https://onmgzinlqnefrsjdgrke.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_3gPubQv5iMgWTGHfdXwM0Q_xab8_pOC";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-  if (document.getElementById("loginPass").value !== LOGIN_PASS) {
-    document.getElementById("loginError").textContent = "Incorrect passcode.";
-    return;
-  }
-
+function enterApp() {
   document.getElementById("loginError").textContent = "";
   document.getElementById("login").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
   document.getElementById("bottomNav").classList.remove("hidden");
-
   renderAll();
   initializeMaps();
+}
+
+document.getElementById("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = document.getElementById("authEmail").value.trim();
+  const password = document.getElementById("authPassword").value;
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    document.getElementById("loginError").textContent = error.message;
+    return;
+  }
+  enterApp();
+});
+
+document.getElementById("createAccountBtn").addEventListener("click", async () => {
+  const email = document.getElementById("authEmail").value.trim();
+  const password = document.getElementById("authPassword").value;
+  if (!email || password.length < 8) {
+    document.getElementById("loginError").textContent = "Enter an email and a password with at least 8 characters.";
+    return;
+  }
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if (error) {
+    document.getElementById("loginError").textContent = error.message;
+    return;
+  }
+  document.getElementById("loginError").textContent = data.session
+    ? "Account created. You are signed in."
+    : "Account created. Check your email for the confirmation link, then sign in.";
+  if (data.session) enterApp();
+});
+
+supabaseClient.auth.getSession().then(({ data, error }) => {
+  if (!error && data.session) enterApp();
 });
 
 function renderAll() {
