@@ -773,7 +773,7 @@ label {
       <!-- Authentication fields are rendered by the Supabase setup script. -->
     </form>
     <div id="loginError" class="login-error"></div>
-    <div class="small muted">Your identity is saved in this browser on this device.</div>
+    <div class="small muted">Use a made-up codename and a unique SPYing password. Never reuse your email or other account password.</div>
   </div>
 </section>
 
@@ -1031,7 +1031,7 @@ label {
 
     <div class="panel form-card">
       <div class="profile-hero">
-        <div class="avatar">◉</div>
+        <div class="avatar" id="profileAvatar">◉</div>
         <div class="eyebrow">Agent identity</div>
         <h2 id="profileCodename">Agent Raven</h2>
         <div class="muted" id="profileRank">Recruit</div>
@@ -1222,13 +1222,16 @@ async function logout() {
 // Supabase authentication: accounts are required for cross-device data.
 const setupForm = document.getElementById("setupForm");
 setupForm.innerHTML = `
-  <p class="muted">Create an account or sign in to sync your agent profile and messages.</p>
+  <p class="muted">Create your agent identity with a codename, optional profile picture, and a password used only for SPYing.</p>
   <label for="authEmail">Email</label>
   <input id="authEmail" class="field" type="email" autocomplete="email" required>
-  <label for="authPassword">Password</label>
+  <label for="authPassword">SPYing password</label>
   <input id="authPassword" class="field" type="password" minlength="8" autocomplete="current-password" required>
-  <label for="newCodename">Agent name</label>
-  <input id="newCodename" class="field" maxlength="30" placeholder="Choose a codename" required>
+  <label for="newCodename">Codename (fake name)</label>
+  <input id="newCodename" class="field" maxlength="30" placeholder="Choose a codename" autocomplete="nickname" required>
+  <label for="avatarFile">Profile picture (optional)</label>
+  <input id="avatarFile" class="field" type="file" accept="image/*">
+  <div class="small muted">Use an avatar or image you have permission to use. Don’t upload private or identifying photos.</div>
   <button class="btn" type="submit">Create Account</button>
   <button class="btn secondary" type="button" id="signInButton">Sign In</button>
 `;
@@ -1236,29 +1239,47 @@ const supabase = window.supabase.createClient("https://onmgzinlqnefrsjdgrke.supa
 window.supabaseRemoteEnabled = true;
 let currentUser = null;
 
+async function imageFileToDataUrl(file) {
+  if (!file) return "";
+  if (!file.type.startsWith("image/")) throw new Error("Choose an image file.");
+  if (file.size > 8 * 1024 * 1024) throw new Error("Choose an image under 8 MB.");
+  const img = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = reader.result; };
+    reader.onerror = reject; reader.readAsDataURL(file);
+  });
+  const canvas = document.createElement("canvas");
+  const scale = Math.min(1, 256 / Math.max(img.width, img.height));
+  canvas.width = Math.max(1, Math.round(img.width * scale));
+  canvas.height = Math.max(1, Math.round(img.height * scale));
+  canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.72);
+}
 function authFormValues() {
   return {
     email: document.getElementById("authEmail").value.trim(),
     password: document.getElementById("authPassword").value,
-    codename: document.getElementById("newCodename").value.trim()
+    codename: document.getElementById("newCodename").value.trim(),
+    avatarFile: document.getElementById("avatarFile").files[0] || null
   };
 }
 async function loadRemoteProfileAndAgents() {
   if (!currentUser) return;
   const { data: ownProfile } = await supabase.from("agent_profiles")
-    .select("user_id,codename,specialty,bio").eq("user_id", currentUser.id).maybeSingle();
+    .select("user_id,codename,specialty,bio,avatar_data").eq("user_id", currentUser.id).maybeSingle();
   if (ownProfile) {
     state.profile.id = ownProfile.user_id;
     state.profile.codename = ownProfile.codename;
     state.profile.specialty = ownProfile.specialty || "Intelligence Analyst";
     state.profile.bio = ownProfile.bio || "";
+    state.profile.avatarData = ownProfile.avatar_data || "";
   }
   const { data: profiles, error } = await supabase.from("agent_profiles")
-    .select("user_id,codename,specialty,bio").neq("user_id", currentUser.id);
+    .select("user_id,codename,specialty,bio,avatar_data").neq("user_id", currentUser.id);
   if (error) { toast("Could not load the agent directory."); return; }
   state.agents = (profiles || []).map(p => ({
     id: p.user_id, user_id: p.user_id, name: p.codename, rank: "Agent",
-    specialty: p.specialty || "Agent", status: "Connected",
+    specialty: p.specialty || "Agent", status: "Connected", avatarData: p.avatar_data || "",
     lat: null, lng: null, color: "#55ff9b"
   }));
   renderAll();
@@ -1273,6 +1294,9 @@ setupForm.addEventListener("submit", async e => {
   e.preventDefault();
   const v = authFormValues();
   if (!v.email || !v.password || !v.codename) return;
+  let avatarData = "";
+  try { avatarData = await imageFileToDataUrl(v.avatarFile); }
+  catch (err) { document.getElementById("loginError").textContent = err.message || "Could not read that image."; return; }
   const { data, error } = await supabase.auth.signUp({
     email: v.email, password: v.password,
     options: { data: { codename: v.codename } }
@@ -1287,7 +1311,7 @@ setupForm.addEventListener("submit", async e => {
   }
   const user = data.user;
   const { error: profileError } = await supabase.from("agent_profiles").upsert({
-    user_id: user.id, codename: v.codename, specialty: "Intelligence Analyst", bio: ""
+    user_id: user.id, codename: v.codename, specialty: "Intelligence Analyst", bio: "", avatar_data: avatarData
   });
   if (profileError) {
     document.getElementById("loginError").textContent = "Account created, but profile setup failed: " + profileError.message;
@@ -1371,7 +1395,7 @@ function renderHomeAgents() {
 
   target.innerHTML = state.agents.length ? state.agents.slice(0, 6).map(agent => `
     <div class="agent-card" onclick="openAgent('${agent.id}')">
-      <div class="avatar">◉</div>
+      <div class="avatar">${agent.avatarData ? `<img src="${agent.avatarData}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : "◉"}</div>
       <strong>${escapeHTML(agent.name)}</strong>
       <div class="rank">${escapeHTML(agent.rank)}</div>
       <div class="status"><span class="dot"></span>${escapeHTML(agent.status)}</div>
@@ -1392,7 +1416,7 @@ function renderAgents() {
 
   target.innerHTML = agents.length ? agents.map(agent => `
     <div class="list-row">
-      <div class="avatar">${agent.status === "On Mission" ? "⌖" : "◉"}</div>
+      <div class="avatar">${agent.avatarData ? `<img src="${agent.avatarData}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : (agent.status === "On Mission" ? "⌖" : "◉")}</div>
       <div class="info">
         <strong>${escapeHTML(agent.name)}</strong>
         <small>${escapeHTML(agent.rank)} · ${escapeHTML(agent.id)}</small>
@@ -1807,6 +1831,8 @@ function renderProfile() {
   const p = state.profile;
 
   document.getElementById("profileCodename").textContent = p.codename;
+  const profileAvatar = document.getElementById("profileAvatar");
+  if (profileAvatar) profileAvatar.innerHTML = p.avatarData ? `<img src="${p.avatarData}" alt="Profile picture" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : "◉";
   document.getElementById("profileRank").textContent = p.rank;
   document.getElementById("profileId").textContent = p.id;
   document.getElementById("xpText").textContent = p.xp + " XP";
