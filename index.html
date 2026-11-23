@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPYing | Spy Network</title>
+
+<link rel="stylesheet"
+ href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+:root {
+  --bg: #030611;
+  --panel: #080d1e;
+  --panel2: #0d1429;
+  --purple: #a56aff;
+  --blue: #63aaff;
+  --cyan: #83d7ff;
+  --green: #55ff9b;
+  --red: #ff536d;
+  --text: #f2f4ff;
+  --muted: #8e9aba;
+  --border: #303a68;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(ellipse at 50% 0%, #17123b 0%, transparent 45%),
+    var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", Arial, sans-serif;
+  min-height: 100vh;
+}
+
+button, input, textarea, select {
+  font: inherit;
+}
+
+button { cursor: pointer; }
+
+button:focus-visible, input:focus-visible,
+textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+.hidden { display: none !important; }
+
+.muted { color: var(--muted); }
+
+.small { font-size: 12px; }
+
+.glow {
+  color: var(--cyan);
+  text-shadow: 0 0 12px #458cff88;
+}
+
+.panel {
+  background: linear-gradient(145deg, #0b1023, #060a17);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 0 20px #5c4bff0b;
+  overflow: hidden;
+}
+
+.btn {
+  border: 1px solid #6658aa;
+  background: linear-gradient(135deg, #38266d, #15284b);
+  color: white;
+  border-radius: 10px;
+  padding: 11px 15px;
+  transition: .2s;
+}
+
+.btn:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 15px #7a75ff44;
+}
+
+.btn.secondary {
+  background: #10172b;
+  border-color: #303a68;
+}
+
+.btn.danger {
+  border-color: #8a3c57;
+  background: #291020;
+}
+
+.field {
+  width: 100%;
+  background: #050a18;
+  border: 1px solid #35416f;
+  border-radius: 10px;
+  padding: 12px;
+  color: white;
+  margin-top: 7px;
+}
+
+.field::placeholder { color: #73809e; }
+
+label {
+  display: block;
+  color: #aeb9d8;
+  font-size: 13px;
+  margin: 12px 0 4px;
+}
+
+.eyebrow {
+  color: var(--purple);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 1px solid #38456c;
+  border-radius: 30px;
+  font-size: 11px;
+  color: #cbd7f6;
+  background: #111a30;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 9px currentColor;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.dot.blue { background: var(--blue); }
+.dot.purple { background: var(--purple); }
+.dot.red { background: var(--red); }
+
+/* LOGIN */
+
+#login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.login-card {
+  width: min(100%, 410px);
+  padding: 35px;
+  text-align: center;
+  background: linear-gradient(145deg, #11152d, #050812);
+  border: 1px solid #6654a5;
+  border-radius: 24px;
+  box-shadow: 0 0 50px #7a49ff1c;
+}
+
+.login-emblem {
+  font-size: 54px;
+  color: var(--purple);
+  text-shadow: 0 0 25px #9e70ff;
+}
+
+.login-title {
+  font-size: 34px;
+  letter-spacing: 4px;
+  margin: 5px 0;
+}
+
+.login-subtitle {
+  color: var(--purple);
+  font-size: 11px;
+  letter-spacing: 4px;
+}
+
+.login-card .btn {
+  width: 100%;
+  margin-top: 18px;
+}
+
+.login-error {
+  color: #ff8c9e;
+  font-size: 13px;
+  margin-top: 12px;
+  min-height: 18px;
+}
+
+/* APP HEADER */
+
+#app {
+  max-width: 1450px;
+  margin: auto;
+  padding: 16px 18px 100px;
+}
+
+.header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 18px 12px 22px;
+  border-bottom: 1px solid #51408b;
+  margin-bottom: 22px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.brand-mark {
+  color: #d7dcff;
+  font-size: 48px;
+  filter: drop-shadow(0 0 12px #7a8cff);
+}
+
+.brand h1 {
+  font-size: clamp(25px, 4vw, 43px);
+  letter-spacing: 3px;
+  margin: 0;
+  font-weight: 800;
+  font-style: italic;
+}
+
+.brand-sub {
+  color: #b9a0ff;
+  font-size: 10px;
+  letter-spacing: 4px;
+  margin-top: 4px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.icon-btn {
+  border: 1px solid #303a68;
+  background: #10162b;
+  color: var(--cyan);
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+}
+
+.profile-mini {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid var(--purple);
+  background: #191b42;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-size: 20px;
+}
+
+.tagline {
+  text-align: center;
+  color: #b9a0ff;
+  letter-spacing: 5px;
+  font-size: 11px;
+  margin: -8px 0 20px;
+}
+
+/* HOME */
+
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, .8fr);
+  gap: 18px;
+}
+
+.home-main, .home-side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 15px 18px;
+  border-bottom: 1px solid #273255;
+}
+
+.panel-head h2, .panel-head h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.panel-body { padding: 16px; }
+
+#map, #homeMap, #fullMap {
+  width: 100%;
+  height: 340px;
+  background: #10172b;
+  z-index: 1;
+}
+
+#fullMap { height: min(65vh, 620px); min-height: 420px; }
+
+.map-footer {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.map-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.map-legend span {
+  display: flex;
+  align-items: center;
+}
+
+.map-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.agent-card {
+  background: #0b1124;
+  border: 1px solid #303a68;
+  border-radius: 15px;
+  padding: 16px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.agent-card:hover {
+  border-color: var(--purple);
+  transform: translateY(-2px);
+}
+
+.avatar {
+  width: 60px;
+  height: 60px;
+  margin: auto auto 10px;
+  border-radius: 50%;
+  border: 2px solid var(--blue);
+  background: radial-gradient(circle, #253c71, #080c1d);
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  box-shadow: 0 0 15px #4a9fff44;
+}
+
+.agent-card strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.agent-card .rank {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.agent-card .status {
+  font-size: 11px;
+  margin-top: 9px;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.quick-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 17px;
+  min-height: 100px;
+  text-align: left;
+  border: 1px solid #51408b;
+  background: linear-gradient(135deg, #11152c, #080b19);
+  color: white;
+  border-radius: 15px;
+}
+
+.quick-card:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 18px #6558ff22;
+}
+
+.quick-icon {
+  font-size: 28px;
+  color: var(--purple);
+  text-shadow: 0 0 15px #a56aff;
+}
+
+.quick-card strong {
+  display: block;
+  font-size: 14px;
+}
+
+.quick-card small {
+  display: block;
+  color: var(--muted);
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.feed-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #202a48;
+  font-size: 13px;
+  color: #d4dcf3;
+}
+
+.feed-item:last-child { border: 0; }
+
+.feed-item time {
+  color: var(--muted);
+  float: right;
+  font-size: 11px;
+}
+
+/* NAVIGATION */
+
+.bottom-nav {
+  position: fixed;
+  z-index: 500;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #050814f2;
+  border-top: 1px solid #51408b;
+  backdrop-filter: blur(15px);
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  padding: 8px 10px max(8px, env(safe-area-inset-bottom));
+}
+
+.nav-btn {
+  border: 0;
+  background: transparent;
+  color: #8592b6;
+  padding: 9px 18px;
+  min-width: 75px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.nav-btn .nav-icon { font-size: 21px; }
+
+.nav-btn.active {
+  color: var(--cyan);
+  text-shadow: 0 0 12px #6eabff;
+}
+
+/* PAGES */
+
+.page {
+  display: none;
+  animation: appear .2s ease;
+}
+
+.page.active { display: block; }
+
+@keyframes appear {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-title {
+  font-size: 26px;
+  margin: 0 0 8px;
+}
+
+.page-intro {
+  color: var(--muted);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px;
+  border-bottom: 1px solid #202a48;
+}
+
+.list-row:last-child { border: 0; }
+
+.list-row .avatar {
+  width: 45px;
+  height: 45px;
+  font-size: 20px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.list-row .info { flex: 1; min-width: 0; }
+
+.list-row strong { display: block; }
+
+.list-row small {
+  display: block;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+.chat-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 15px;
+}
+
+.chat-list { max-height: 560px; overflow: auto; }
+
+.chat-user {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #202a48;
+  background: transparent;
+  color: white;
+  padding: 14px;
+  text-align: left;
+}
+
+.chat-user.active { background: #171a3b; }
+
+.chat-window {
+  display: flex;
+  flex-direction: column;
+  min-height: 450px;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  max-height: 420px;
+}
+
+.bubble {
+  max-width: 80%;
+  padding: 11px 14px;
+  background: #151b36;
+  border: 1px solid #303a68;
+  border-radius: 13px 13px 13px 3px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.bubble.mine {
+  margin-left: auto;
+  background: #30205c;
+  border-color: #604c9a;
+  border-radius: 13px 13px 3px 13px;
+}
+
+.chat-compose {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #273255;
+}
+
+.chat-compose input { margin: 0; }
+
+.file-card {
+  background: #0b1124;
+  border: 1px solid #303a68;
+  border-radius: 14px;
+  padding: 17px;
+  margin-bottom: 12px;
+}
+
+.file-card h3 { margin: 0 0 8px; }
+
+.file-card p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.file-meta {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 12px;
+}
+
+.form-card {
+  max-width: 650px;
+  padding: 22px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.profile-hero {
+  text-align: center;
+  padding: 30px;
+}
+
+.profile-hero .avatar {
+  width: 90px;
+  height: 90px;
+  font-size: 40px;
+}
+
+.profile-hero h2 { margin: 8px 0; }
+
+.xp-track {
+  height: 8px;
+  background: #1a2240;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.xp-fill {
+  height: 100%;
+  width: 35%;
+  background: linear-gradient(90deg, var(--purple), var(--cyan));
+  box-shadow: 0 0 10px var(--purple);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #000b;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.modal {
+  width: min(100%, 470px);
+  max-height: 90vh;
+  overflow: auto;
+  background: #090e20;
+  border: 1px solid #5c4e9c;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 0 40px #6558ff22;
+}
+
+.modal h2 { margin-top: 0; }
+
+.toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #171e39;
+  border: 1px solid #5c4e9c;
+  padding: 12px 18px;
+  border-radius: 12px;
+  z-index: 2000;
+  box-shadow: 0 0 20px #6558ff33;
+  font-size: 13px;
+}
+
+@media (max-width: 800px) {
+  #app { padding: 10px 10px 95px; }
+  .home-grid { grid-template-columns: 1fr; }
+  .home-side { display: contents; }
+  .agent-grid { grid-template-columns: repeat(3, 1fr); }
+  .chat-layout { grid-template-columns: 1fr; }
+  .chat-list {
+    display: flex;
+    overflow-x: auto;
+    max-height: none;
+  }
+  .chat-user { min-width: 150px; }
+  .content-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .brand-mark { font-size: 32px; }
+  .brand h1 { font-size: 24px; letter-spacing: 1px; }
+  .brand-sub { letter-spacing: 2px; font-size: 9px; }
+  .brand { gap: 8px; }
+  .header { padding: 12px 4px 18px; }
+  .header-actions { gap: 5px; }
+  .icon-btn { width: 36px; height: 36px; }
+  .profile-mini { width: 36px; height: 36px; }
+  .agent-grid { grid-template-columns: 1fr; }
+  .agent-card {
+    display: grid;
+    grid-template-columns: 45px 1fr;
+    text-align: left;
+    gap: 0 10px;
+    padding: 10px;
+  }
+  .agent-card .avatar {
+    width: 40px;
+    height: 40px;
+    grid-row: span 3;
+    margin: 0;
+    font-size: 18px;
+  }
+  .agent-card .status { margin-top: 4px; }
+  .quick-card { padding: 12px; gap: 8px; }
+  .quick-icon { font-size: 22px; }
+  .quick-card strong { font-size: 12px; }
+  .quick-card small { font-size: 10px; }
+  #map, #homeMap { height: 310px; }
+  #fullMap { height: 60vh; min-height: 360px; }
+  .nav-btn { min-width: 0; flex: 1; padding: 8px 3px; }
+  .nav-btn .nav-icon { font-size: 19px; }
+  .nav-btn { font-size: 10px; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<section id="login">
+  <div class="login-card">
+    <div class="login-emblem">✦</div>
+    <div class="eyebrow">Secure agent access</div>
+    <h1 class="login-title">SPYing</h1>
+    <div class="login-subtitle">THE SPY NETWORK</div>
+
+    <form id="setupForm">
+      <p class="muted">Create your agent identity. Use a fictional codename.</p>
+      <label for="realName">Your real name</label>
+      <input id="realName" class="field" maxlength="60" autocomplete="name" required>
+      <label for="newCodename">Your fake name / codename</label>
+      <input id="newCodename" class="field" maxlength="30" placeholder="e.g. Agent Raven" required>
+      <label for="newSpecialty">What kind of spy are you?</label>
+      <select id="newSpecialty" class="field" required>
+        <option>Intelligence Analyst</option><option>Field Agent</option>
+        <option>Cryptographer</option><option>Investigator</option>
+        <option>Mission Director</option>
+      </select>
+      <button class="btn" type="submit">Save Identity & Continue</button>
+    </form>
+    <form id="loginForm" class="hidden">
+      <label for="loginPass">Agency passcode</label>
+      <input id="loginPass" class="field" type="password"
+        placeholder="Enter passcode" autocomplete="current-password" required>
+      <button class="btn" type="submit">Enter Headquarters</button>
+    </form>
+    <div id="loginError" class="login-error"></div>
+    <div class="small muted">Your identity is saved in this browser on this device.</div>
+  </div>
+</section>
+
+<!-- APP -->
+<div id="app" class="hidden">
+
+  <header class="header">
+    <div class="brand">
+      <div class="brand-mark">✦</div>
+      <div>
+        <h1>SPYing</h1>
+        <div class="brand-sub">SPY NETWORK</div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="profile-mini" title="Your agent profile">◉</div>
+      <button class="icon-btn" onclick="showPage('profile')" title="Profile">⚙</button>
+    </div>
+  </header>
+
+  <div class="tagline">DISCOVER · COMMUNICATE · PROTECT</div>
+
+  <!-- HOME -->
+  <section id="page-home" class="page active">
+    <div class="home-grid">
+
+      <div class="home-main">
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>⌖ Spokane Operations</h2>
+            <span class="badge"><span class="dot"></span>Live Map</span>
+          </div>
+
+          <div id="homeMap"></div>
+
+          <div class="map-footer">
+            <div class="map-legend">
+              <span><i class="map-dot" style="background:#64b2ff"></i>Your Device</span>
+              <span><i class="map-dot" style="background:#55ff9b"></i>Online Agent</span>
+              <span><i class="map-dot" style="background:#b879ff"></i>On Mission</span>
+            </div>
+            <button class="btn secondary" onclick="showPage('map')">Open Map ↗</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Agent Network</h2>
+            <span class="badge"><span class="dot"></span><span id="onlineCount">3</span> Online</span>
+          </div>
+          <div class="panel-body">
+            <div class="agent-grid" id="homeAgents"></div>
+          </div>
+        </div>
+
+        <div class="quick-grid">
+          <button class="quick-card" onclick="showPage('messages')">
+            <span class="quick-icon">✉</span>
+            <span><strong>Messages</strong><small>Chat with Agents</small></span>
+          </button>
+
+          <button class="quick-card" onclick="showPage('archive')">
+            <span class="quick-icon">▣</span>
+            <span><strong>Classified Files</strong><small>Enter Password: Spy</small></span>
+          </button>
+
+          <button class="quick-card" onclick="showPage('profile')">
+            <span class="quick-icon">★</span>
+            <span><strong>My Profile</strong><small>View Your Rank</small></span>
+          </button>
+
+          <button class="quick-card" onclick="showPage('missions')">
+            <span class="quick-icon">▤</span>
+            <span><strong>Missions</strong><small>Document Your Own</small></span>
+          </button>
+        </div>
+
+      </div>
+
+      <aside class="home-side">
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Agent Snapshot</h2>
+          </div>
+          <div class="panel-body">
+            <div class="eyebrow">Your current identity</div>
+            <h2 id="homeCodename" style="margin:8px 0">Agent Raven</h2>
+            <div class="muted small" id="homeRank">Recruit</div>
+            <div style="margin-top:14px">
+              <span class="badge"><span class="dot"></span>Signed In</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Agency Overview</h2>
+          </div>
+          <div class="panel-body">
+            <div class="feed-item">
+              <span class="muted">Agents online</span>
+              <strong id="statAgents" style="float:right">3</strong>
+            </div>
+            <div class="feed-item">
+              <span class="muted">Your documented missions</span>
+              <strong id="statMissions" style="float:right">0</strong>
+            </div>
+            <div class="feed-item">
+              <span class="muted">Archived files</span>
+              <strong id="statFiles" style="float:right">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Quick Actions</h2>
+          </div>
+          <div class="panel-body" style="display:grid;gap:10px">
+            <button class="btn" onclick="createMission()">＋ Document a Mission</button>
+            <button class="btn secondary" onclick="createFile()">＋ Add Classified File</button>
+            <button class="btn secondary" onclick="showPage('agents')">View Agent Directory</button>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+  </section>
+
+  <!-- MAP -->
+  <section id="page-map" class="page">
+    <h2 class="page-title">Spokane Operations Map</h2>
+    <p class="page-intro">
+      Explore Spokane and view agent locations. Demo agents use fictional
+      map positions. Your device location is only shown after you grant permission.
+    </p>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>⌖ Live Agent Map</h2>
+        <span class="badge"><span class="dot"></span>Map Ready</span>
+      </div>
+      <div id="fullMap"></div>
+      <div class="map-footer">
+        <div class="map-legend">
+          <span><i class="map-dot" style="background:#64b2ff"></i>Your Device</span>
+          <span><i class="map-dot" style="background:#55ff9b"></i>Online</span>
+          <span><i class="map-dot" style="background:#b879ff"></i>On Mission</span>
+        </div>
+        <button class="btn" onclick="shareMyLocation()">Share My Location</button>
+      </div>
+    </div>
+
+    <p class="small muted" style="margin-top:14px">
+      Location sharing is optional. This demo does not transmit your location
+      to other devices.
+    </p>
+  </section>
+
+  <!-- AGENTS -->
+  <section id="page-agents" class="page">
+    <h2 class="page-title">Agent Directory</h2>
+    <p class="page-intro">Find agents, view their profiles, and start conversations.</p>
+
+    <div class="panel">
+      <div class="panel-body">
+        <input id="agentSearch" class="field" placeholder="Search agents..."
+          oninput="renderAgents()">
+      </div>
+      <div id="agentDirectory"></div>
+    </div>
+  </section>
+
+  <!-- MESSAGES -->
+  <section id="page-messages" class="page">
+    <h2 class="page-title">Secure Communications</h2>
+    <p class="page-intro">Private demo conversations with agents in your network.</p>
+
+    <div class="chat-layout">
+      <div class="panel chat-list" id="chatList"></div>
+
+      <div class="panel chat-window">
+        <div class="panel-head">
+          <h2 id="chatTitle">Select an agent</h2>
+          <span class="badge">Demo Chat</span>
+        </div>
+        <div id="chatMessages" class="chat-messages"></div>
+        <form id="chatForm" class="chat-compose">
+          <input id="chatInput" class="field" placeholder="Write a message..."
+            autocomplete="off" required>
+          <button class="btn" type="submit">Send</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARCHIVE -->
+  <section id="page-archive" class="page">
+    <h2 class="page-title">Classified Archive</h2>
+    <p class="page-intro">
+      Store documents, mission reports, and fictional case files.
+      The archive requires its own password.
+    </p>
+
+    <div id="archiveGate" class="panel form-card">      <div class="eyebrow">Restricted access</div>
+      <h2>▣ Classified Files</h2>
+      <form id="archiveForm">
+        <label for="archivePass">Archive password</label>
+        <input id="archivePass" class="field" type="password"
+          placeholder="Enter archive password" required>
+        <button class="btn" type="submit">Unlock Archive</button>
+      </form>
+      <div id="archiveError" class="login-error"></div>
+    </div>
+
+    <div id="archiveContent" class="hidden">
+      <div class="panel" style="margin-bottom:15px">
+        <div class="panel-head">
+          <h2>Classified Documents</h2>
+          <button class="btn" onclick="createFile()">＋ Add File</button>
+        </div>
+        <div class="panel-body">
+          <p class="muted small">
+            Add a document or use the mission form to save a mission report.
+          </p>
+          <div id="archiveFiles"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MISSIONS -->
+  <section id="page-missions" class="page">
+    <h2 class="page-title">Mission Documentation</h2>
+    <p class="page-intro">
+      Create your own missions, record their details, and save them to your archive.
+    </p>
+
+    <div class="panel" style="margin-bottom:15px">
+      <div class="panel-head">
+        <h2>Your Missions</h2>
+        <button class="btn" onclick="createMission()">＋ New Mission</button>
+      </div>
+      <div class="panel-body" id="missionList"></div>
+    </div>
+  </section>
+
+  <!-- PROFILE -->
+  <section id="page-profile" class="page">
+    <h2 class="page-title">Agent Profile</h2>
+    <p class="page-intro">Your identity, rank, and progress.</p>
+
+    <div class="panel form-card">
+      <div class="profile-hero">
+        <div class="avatar">◉</div>
+        <div class="eyebrow">Agent identity</div>
+        <h2 id="profileCodename">Agent Raven</h2>
+        <div class="muted" id="profileRank">Recruit</div>
+        <div class="badge" style="margin-top:12px">AGENT ID: <span id="profileId">OS-0001</span></div>
+      </div>
+
+      <div class="panel-body">
+        <div class="eyebrow">Experience</div>
+        <div style="display:flex;justify-content:space-between;margin-top:10px">
+          <strong id="xpText">0 XP</strong>
+          <span class="muted small" id="nextRank">Next rank: Field Agent</span>
+        </div>
+        <div class="xp-track"><div id="xpFill" class="xp-fill"></div></div>
+
+        <form id="profileForm" style="margin-top:25px">
+          <label for="codename">Codename</label>
+          <input id="codename" class="field" maxlength="30" required>
+
+          <label for="specialty">Agent Specialty</label>
+          <select id="specialty" class="field">
+            <option>Intelligence Analyst</option>
+            <option>Field Agent</option>
+            <option>Cryptographer</option>
+            <option>Investigator</option>
+            <option>Mission Director</option>
+          </select>
+
+          <label for="bio">Agent Biography</label>
+          <textarea id="bio" class="field" rows="3"
+            placeholder="Write a fictional agent biography..."></textarea>
+
+          <button class="btn" type="submit" style="margin-top:15px">Save Profile</button>
+        </form>
+
+        <button class="btn secondary" onclick="logout()" style="margin-top:20px;width:100%">
+          Sign Out
+        </button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<nav id="bottomNav" class="bottom-nav hidden">
+  <button class="nav-btn active" data-page="home" onclick="showPage('home')">
+    <span class="nav-icon">⌂</span>Home
+  </button>
+  <button class="nav-btn" data-page="map" onclick="showPage('map')">
+    <span class="nav-icon">⌖</span>Map
+  </button>
+  <button class="nav-btn" data-page="agents" onclick="showPage('agents')">
+    <span class="nav-icon">♙</span>Agents
+  </button>
+  <button class="nav-btn" data-page="archive" onclick="showPage('archive')">
+    <span class="nav-icon">▣</span>Archive
+  </button>
+  <button class="nav-btn" data-page="profile" onclick="showPage('profile')">
+    <span class="nav-icon">◉</span>Profile
+  </button>
+</nav>
+
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+/*
+  SPYing browser demo.
+
+  Login passcode: Spy!
+  Classified archive password: Spy
+
+  This is a local prototype, not a production security system.
+  Browser storage can be inspected or edited by the device owner.
+  Real multi-device messaging and location sharing require a backend.
+*/
+
+const LOGIN_PASS = "Spy!";
+const ARCHIVE_PASS = "Spy";
+
+const STORAGE_KEY = "spying_demo_v1";
+
+let state;
+let archiveUnlocked = false;
+let selectedChat = null;
+
+let homeMap = null;
+let fullMap = null;
+let homeMarkers = [];
+let fullMarkers = [];
+let homeDeviceMarker = null;
+let fullDeviceMarker = null;
+
+const defaultAgents = []; // No fictional agents or simulated positions.
+
+function loadState() {
+  try {
+    const saved = JSON.parse(window.localStorage ? localStorage.getItem(STORAGE_KEY) : null);
+    if (saved && saved.profile && Array.isArray(saved.agents)) {
+      return {
+        profile: saved.profile, agents: [],
+        messages: {}, files: saved.files || [],
+        missions: saved.missions || []
+      };
+    }
+  } catch (e) {
+    console.warn("SPYing is using temporary demo data because browser storage is unavailable.", e);
+  }
+
+  return {
+    profile: {
+      realName: "",
+      codename: "Agent Raven",
+      id: "OS-0001",
+      rank: "Recruit",
+      specialty: "Intelligence Analyst",
+      bio: "",
+      xp: 0
+    },
+    agents: [],
+    messages: {},
+    files: [],
+    missions: []
+  };
+}
+
+// Initialize only after defaultAgents has been declared (avoids a TDZ crash).
+state = loadState();
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn("SPYing could not save local data in this preview environment.", error);
+    toast("Local saving is unavailable in this preview.");
+  }
+}
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  }[c]));
+}
+
+function toast(message) {
+  const root = document.getElementById("toastRoot");
+  root.innerHTML = `<div class="toast">${escapeHTML(message)}</div>`;
+  setTimeout(() => root.innerHTML = "", 2600);
+}
+
+function showPage(page) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById("page-" + page).classList.add("active");
+
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.page === page);
+  });
+
+  if (page === "map") {
+    requestAnimationFrame(() => {
+      if (fullMap) fullMap.invalidateSize();
+      else initializeMaps();
+    });
+  }
+
+  if (page === "agents") renderAgents();
+  if (page === "messages") renderChats();
+  if (page === "missions") renderMissions();
+  if (page === "archive") renderArchive();
+  if (page === "profile") renderProfile();
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function logout() {
+  archiveUnlocked = false;
+  document.getElementById("app").classList.add("hidden");
+  document.getElementById("bottomNav").classList.add("hidden");
+  document.getElementById("login").classList.remove("hidden");
+  document.getElementById("loginPass").value = "";
+}
+
+// First visit: collect an agent identity before showing the passcode form.
+const setupForm = document.getElementById("setupForm");
+const loginForm = document.getElementById("loginForm");
+function showEntryStep() {
+  const hasIdentity = !!(state.profile.realName && state.profile.codename && state.profile.specialty);
+  setupForm.classList.toggle("hidden", hasIdentity);
+  loginForm.classList.toggle("hidden", !hasIdentity);
+  if (hasIdentity) {
+    document.getElementById("realName").value = state.profile.realName;
+    document.getElementById("newCodename").value = state.profile.codename;
+    document.getElementById("newSpecialty").value = state.profile.specialty;
+  }
+}
+setupForm.addEventListener("submit", e => {
+  e.preventDefault();
+  state.profile.realName = document.getElementById("realName").value.trim();
+  state.profile.codename = document.getElementById("newCodename").value.trim();
+  state.profile.specialty = document.getElementById("newSpecialty").value;
+  if (!state.profile.realName || !state.profile.codename) return;
+  saveState();
+  document.getElementById("loginError").textContent = "";
+  showEntryStep();
+});
+showEntryStep();
+
+document.getElementById("loginForm").addEventListener("submit", e => {
+  e.preventDefault();
+
+  if (document.getElementById("loginPass").value !== LOGIN_PASS) {
+    document.getElementById("loginError").textContent = "Incorrect passcode.";
+    return;
+  }
+
+  document.getElementById("loginError").textContent = "";
+  document.getElementById("login").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  document.getElementById("bottomNav").classList.remove("hidden");
+
+  renderAll();
+  initializeMaps();
+});
+
+function renderAll() {
+  renderHomeAgents();
+  renderAgents();
+  renderChats();
+  renderMissions();
+  renderProfile();
+  updateStats();
+}
+
+function updateStats() {
+  document.getElementById("onlineCount").textContent = state.agents.length;
+  document.getElementById("statAgents").textContent = state.agents.length;
+  document.getElementById("statMissions").textContent = state.missions.length;
+  document.getElementById("statFiles").textContent = state.files.length;
+}
+
+function rankForXP(xp) {
+  if (xp >= 1000) return "Intelligence Director";
+  if (xp >= 500) return "Senior Agent";
+  if (xp >= 150) return "Field Agent";
+  return "Recruit";
+}
+
+function updateRank() {
+  const oldRank = state.profile.rank;
+  state.profile.rank = rankForXP(state.profile.xp);
+
+  if (oldRank !== state.profile.rank) {
+    toast("Promotion earned: " + state.profile.rank);
+  }
+}
+
+function addXP(amount) {
+  state.profile.xp += amount;
+  updateRank();
+  saveState();
+  renderProfile();
+}
+
+function renderHomeAgents() {
+  const target = document.getElementById("homeAgents");
+
+  target.innerHTML = state.agents.length ? state.agents.slice(0, 6).map(agent => `
+    <div class="agent-card" onclick="openAgent('${agent.id}')">
+      <div class="avatar">◉</div>
+      <strong>${escapeHTML(agent.name)}</strong>
+      <div class="rank">${escapeHTML(agent.rank)}</div>
+      <div class="status"><span class="dot"></span>${escapeHTML(agent.status)}</div>
+    </div>
+  `).join("") : `<div class="muted small" style="grid-column:1/-1;padding:12px">No agents connected. Real agents will appear here when a shared agency server is connected.</div>`;
+}
+
+function renderAgents() {
+  const target = document.getElementById("agentDirectory");
+  if (!target) return;
+
+  const query = (document.getElementById("agentSearch")?.value || "").toLowerCase();
+
+  const agents = state.agents.filter(agent =>
+    (agent.name + agent.rank + agent.id + agent.specialty)
+      .toLowerCase().includes(query)
+  );
+
+  target.innerHTML = agents.length ? agents.map(agent => `
+    <div class="list-row">
+      <div class="avatar">${agent.status === "On Mission" ? "⌖" : "◉"}</div>
+      <div class="info">
+        <strong>${escapeHTML(agent.name)}</strong>
+        <small>${escapeHTML(agent.rank)} · ${escapeHTML(agent.id)}</small>
+        <small>${escapeHTML(agent.specialty)}</small>
+      </div>
+      <span class="badge">${escapeHTML(agent.status)}</span>
+      <button class="btn secondary" onclick="openChat('${agent.id}')">Message</button>
+    </div>
+  `).join("") : `<div class="panel-body muted">No agents connected. Connect a shared agency server to show real signed-in agents here.</div>`;
+}
+
+function openAgent(id) {
+  const agent = state.agents.find(a => a.id === id);
+  if (!agent) return;
+
+  document.getElementById("modalRoot").innerHTML = `
+    <div class="modal-backdrop" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="eyebrow">Agent dossier</div>
+        <h2>${escapeHTML(agent.name)}</h2>
+        <p class="muted">${escapeHTML(agent.rank)} · ${escapeHTML(agent.id)}</p>
+        <p>Specialty: ${escapeHTML(agent.specialty)}</p>
+        <p>Status: ${escapeHTML(agent.status)}</p>
+        <div class="form-actions">
+          <button class="btn" onclick="openChat('${agent.id}')">Message Agent</button>
+          <button class="btn secondary" onclick="closeModal()">Close</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function closeModal(event) {
+  if (event && event.target !== event.currentTarget) return;
+  document.getElementById("modalRoot").innerHTML = "";
+}
+
+/* MAP */
+
+function makeAgentIcon(color) {
+  return L.divIcon({
+    className: "",
+    html: `<div style="
+      width:24px;height:24px;border-radius:50%;
+      background:${color};border:3px solid white;
+      box-shadow:0 0 15px ${color};
+    "></div>`,
+    iconSize: [24,24],
+    iconAnchor: [12,12]
+  });
+}
+
+function addAgentMarkers(map, markerArray) {
+  markerArray.forEach(marker => map.removeLayer(marker));
+  markerArray.length = 0;
+
+  state.agents.forEach(agent => {
+    const marker = L.marker([agent.lat, agent.lng], {
+      icon: makeAgentIcon(agent.color)
+    }).addTo(map);
+
+    marker.bindPopup(`
+      <strong>${escapeHTML(agent.name)}</strong><br>
+      ${escapeHTML(agent.rank)}<br>
+      ${escapeHTML(agent.status)}
+    `);
+
+    markerArray.push(marker);
+  });
+}
+
+function initializeMaps() {
+  if (typeof L === "undefined") {
+    ["homeMap", "fullMap"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.innerHTML = '<div style="height:100%;min-height:260px;display:grid;place-items:center;text-align:center;padding:24px;color:#cbd7f6;background:radial-gradient(circle at 50% 45%,#18234a,#070b18)"><div><div style="font-size:28px;color:#a56aff">⌖ SPOKANE</div><p style="max-width:340px;line-height:1.5">The map library could not load. Check your internet connection and refresh to try again.</p></div></div>';
+      }
+    });
+    console.warn("Leaflet was unavailable; SPYing is continuing without the map.");
+    return;
+  }
+
+  const center = [20, 0];
+  const startZoom = 2;
+  const tileUrl = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+  const tileOptions = {
+    subdomains: "abcd",
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  };
+
+  if (!homeMap) {
+    homeMap = L.map("homeMap", { zoomControl: false }).setView(center, startZoom);
+    L.tileLayer(tileUrl, tileOptions).addTo(homeMap);
+    addAgentMarkers(homeMap, homeMarkers);
+    if (!state.agents.length) addMapNotice(homeMap);
+  }
+
+  if (!fullMap) {
+    fullMap = L.map("fullMap").setView(center, startZoom);
+    L.tileLayer(tileUrl, tileOptions).addTo(fullMap);
+    addAgentMarkers(fullMap, fullMarkers);
+    if (!state.agents.length) addMapNotice(fullMap);
+  }
+
+  // Hidden map containers can report zero dimensions until their page is shown.
+  requestAnimationFrame(() => {
+    if (homeMap) homeMap.invalidateSize();
+    if (fullMap) fullMap.invalidateSize();
+  });
+}
+
+function addMapNotice(map) {
+  const notice = L.control({ position: "topright" });
+  notice.onAdd = function () {
+    const div = L.DomUtil.create("div", "badge");
+    div.style.cssText = "background:#080d1e;color:#dbe5ff;border:1px solid #51408b;padding:10px 12px;border-radius:9px;max-width:220px;white-space:normal;font:12px Segoe UI,Arial";
+    div.textContent = "No agents connected. Only real connected agents will appear.";
+    return div;
+  };
+  notice.addTo(map);
+}
+
+function shareMyLocation() {
+  if (typeof L === "undefined" || !homeMap || !fullMap) {
+    toast("The interactive map is unavailable right now.");
+    return;
+  }
+  if (!navigator.geolocation) {
+    toast("This browser does not support location sharing.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(position => {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+
+    if (homeDeviceMarker) homeMap.removeLayer(homeDeviceMarker);
+    if (fullDeviceMarker) fullMap.removeLayer(fullDeviceMarker);
+
+    // A Leaflet marker can belong to only one map, so create one per map.
+    const icon = makeAgentIcon("#64b2ff");
+    homeDeviceMarker = L.marker([lat, lng], { icon })
+      .bindPopup("Your device location")
+      .addTo(homeMap);
+    fullDeviceMarker = L.marker([lat, lng], { icon: makeAgentIcon("#64b2ff") })
+      .bindPopup("Your device location")
+      .addTo(fullMap);
+
+    homeMap.setView([lat, lng], 14);
+    fullMap.setView([lat, lng], 14);
+
+    toast("Your device location is displayed on this browser.");
+  }, () => {
+    toast("Location permission was not granted.");
+  }, {
+    enableHighAccuracy: true,
+    timeout: 10000
+  });
+}
+
+/* MESSAGING */
+
+function renderChats() {
+  const list = document.getElementById("chatList");
+  if (!list) return;
+
+  list.innerHTML = state.agents.map(agent => `
+    <button class="chat-user ${selectedChat === agent.id ? "active" : ""}"
+      onclick="openChat('${agent.id}')">
+      <strong>${escapeHTML(agent.name)}</strong>
+      <div class="small muted">${escapeHTML(agent.status)}</div>
+    </button>
+  `).join("");
+}
+
+function openChat(id) {
+  selectedChat = id;
+  showPage("messages");
+
+  const agent = state.agents.find(a => a.id === id);
+  if (!agent) return;
+
+  document.getElementById("chatTitle").textContent = agent.name;
+  renderChats();
+  renderMessages();
+}
+
+function renderMessages() {
+  const target = document.getElementById("chatMessages");
+  if (!selectedChat) {
+    target.innerHTML = `<div class="muted">Choose an agent to begin a conversation.</div>`;
+    return;
+  }
+
+  const messages = state.messages[selectedChat] || [];
+
+  target.innerHTML = messages.map(message => `
+    <div class="bubble ${message.mine ? "mine" : ""}">
+      ${escapeHTML(message.text)}
+      <div class="small muted" style="margin-top:5px">${escapeHTML(message.time)}</div>
+    </div>
+  `).join("");
+
+  target.scrollTop = target.scrollHeight;
+}
+
+document.getElementById("chatForm").addEventListener("submit", e => {
+  e.preventDefault();
+
+  if (!selectedChat) {
+    toast("Select an agent first.");
+    return;
+  }
+
+  const input = document.getElementById("chatInput");
+  const text = input.value.trim();
+  if (!text) return;
+
+  state.messages[selectedChat] ||= [];
+  state.messages[selectedChat].push({
+    text,
+    mine: true,
+    time: new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    })
+  });
+
+  input.value = "";
+  saveState();
+  renderMessages();
+});
+
+/* ARCHIVE */
+
+document.getElementById("archiveForm").addEventListener("submit", e => {
+  e.preventDefault();
+
+  if (document.getElementById("archivePass").value !== ARCHIVE_PASS) {
+    document.getElementById("archiveError").textContent = "Incorrect archive password.";
+    return;
+  }
+
+  archiveUnlocked = true;
+  document.getElementById("archiveError").textContent = "";
+  document.getElementById("archiveGate").classList.add("hidden");
+  document.getElementById("archiveContent").classList.remove("hidden");
+
+  renderArchive();
+});
+
+function renderArchive() {
+  const target = document.getElementById("archiveFiles");
+  if (!target || !archiveUnlocked) return;
+
+  const files = [...state.files].sort((a, b) => b.created - a.created);
+
+  target.innerHTML = files.map(file => `
+    <div class="file-card">
+      <div class="eyebrow">${escapeHTML(file.type || "CLASSIFIED DOCUMENT")}</div>
+      <h3>${escapeHTML(file.title)}</h3>
+      <p>${escapeHTML(file.content)}</p>
+      <div class="file-meta">
+        <span>${escapeHTML(file.date)}</span>
+        <span>${escapeHTML(file.id)}</span>
+      </div>
+    </div>
+  `).join("") || `<div class="muted">No classified files yet.</div>`;
+}
+
+function createFile(prefill = {}) {
+  document.getElementById("modalRoot").innerHTML = `
+    <div class="modal-backdrop" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="eyebrow">Classified archive</div>
+        <h2>Add Document</h2>
+        <form id="fileForm">
+          <label>Document Title</label>
+          <input class="field" name="title" required value="${escapeHTML(prefill.title || "")}">
+          <label>Document Type</label>
+          <select class="field" name="type">
+            <option>CLASSIFIED DOCUMENT</option>
+            <option>MISSION REPORT</option>
+            <option>CASE FILE</option>
+            <option>INTELLIGENCE NOTE</option>
+          </select>
+          <label>Document Contents</label>
+          <textarea class="field" name="content" rows="6" required>${escapeHTML(prefill.content || "")}</textarea>
+          <div class="form-actions">
+            <button class="btn" type="submit">Save Document</button>
+            <button class="btn secondary" type="button" onclick="closeModal()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+
+  document.getElementById("fileForm").addEventListener("submit", e => {
+    e.preventDefault();
+
+    const data = new FormData(e.target);
+
+    state.files.push({
+      id: "FILE-" + String(state.files.length + 1).padStart(3, "0"),
+      title: data.get("title"),
+      type: data.get("type"),
+      content: data.get("content"),
+      date: new Date().toLocaleDateString(),
+      created: Date.now()
+    });
+
+    saveState();
+    closeModal();
+    renderArchive();
+    updateStats();
+    toast("Document saved to the archive.");
+  });
+}
+
+/* MISSIONS */
+
+function renderMissions() {
+  const target = document.getElementById("missionList");
+  if (!target) return;
+
+  target.innerHTML = state.missions.map(mission => `
+    <div class="file-card">
+      <div class="eyebrow">MISSION DOCUMENT</div>
+      <h3>${escapeHTML(mission.title)}</h3>
+      <p>${escapeHTML(mission.description)}</p>
+      <div class="file-meta">
+        <span>${escapeHTML(mission.date)}</span>
+        <span>${escapeHTML(mission.status)}</span>
+      </div>
+      <div class="form-actions">
+        <button class="btn secondary" onclick="editMission('${mission.id}')">Edit</button>
+        <button class="btn" onclick="archiveMission('${mission.id}')">Save to Archive</button>
+      </div>
+    </div>
+  `).join("") || `<div class="muted">No missions documented yet. Create your first mission.</div>`;
+}
+
+function createMission(existing = null) {
+  const mission = existing || {
+    id: "MISSION-" + Date.now(),
+    title: "",
+    description: "",
+    status: "In Progress",
+    date: new Date().toLocaleDateString()
+  };
+
+  document.getElementById("modalRoot").innerHTML = `
+    <div class="modal-backdrop" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="eyebrow">Mission documentation</div>
+        <h2>${existing ? "Edit Mission" : "Create Mission"}</h2>
+        <form id="missionForm">
+          <label>Mission Title</label>
+          <input class="field" name="title" required value="${escapeHTML(mission.title)}">
+          <label>Mission Details</label>
+          <textarea class="field" name="description" rows="6" required>${escapeHTML(mission.description)}</textarea>
+          <label>Mission Status</label>
+          <select class="field" name="status">
+            <option ${mission.status === "In Progress" ? "selected" : ""}>In Progress</option>
+            <option ${mission.status === "Completed" ? "selected" : ""}>Completed</option>
+            <option ${mission.status === "Cancelled" ? "selected" : ""}>Cancelled</option>
+          </select>
+          <div class="form-actions">
+            <button class="btn" type="submit">Save Mission</button>
+            <button class="btn secondary" type="button" onclick="closeModal()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+
+  document.getElementById("missionForm").addEventListener("submit", e => {
+    e.preventDefault();
+
+    const data = new FormData(e.target);
+
+    mission.title = data.get("title");
+    mission.description = data.get("description");
+    mission.status = data.get("status");
+
+    if (!existing) state.missions.push(mission);
+
+    saveState();
+    closeModal();
+    renderMissions();
+    updateStats();
+    addXP(25);
+    toast("Mission documented. +25 XP");
+  });
+}
+
+function editMission(id) {
+  const mission = state.missions.find(m => m.id === id);
+  if (mission) createMission(mission);
+}
+
+function archiveMission(id) {
+  const mission = state.missions.find(m => m.id === id);
+  if (!mission) return;
+
+  state.files.push({
+    id: "FILE-" + String(state.files.length + 1).padStart(3, "0"),
+    title: mission.title,
+    type: "MISSION REPORT",
+    content: mission.description + "\n\nStatus: " + mission.status,
+    date: new Date().toLocaleDateString(),
+    created: Date.now()
+  });
+
+  saveState();
+  updateStats();
+  toast("Mission report saved to the classified archive.");
+}
+
+/* PROFILE */
+
+function renderProfile() {
+  const p = state.profile;
+
+  document.getElementById("profileCodename").textContent = p.codename;
+  document.getElementById("profileRank").textContent = p.rank;
+  document.getElementById("profileId").textContent = p.id;
+  document.getElementById("xpText").textContent = p.xp + " XP";
+  document.getElementById("homeCodename").textContent = p.codename;
+  document.getElementById("homeRank").textContent = p.rank;
+
+  document.getElementById("codename").value = p.codename;
+  document.getElementById("specialty").value = p.specialty;
+  document.getElementById("bio").value = p.bio;
+
+  const thresholds = {
+    "Recruit": 150,
+    "Field Agent": 500,
+    "Senior Agent": 1000,
+    "Intelligence Director": 1000
+  };
+
+  const threshold = thresholds[p.rank] || 1000;
+  document.getElementById("xpFill").style.width =
+    Math.min(100, p.xp / threshold * 100) + "%";
+
+  document.getElementById("nextRank").textContent =
+    p.rank === "Intelligence Director" ? "Maximum rank" : "Next rank: " +
+    (p.rank === "Recruit" ? "Field Agent" :
+     p.rank === "Field Agent" ? "Senior Agent" : "Intelligence Director");
+}
+
+document.getElementById("profileForm").addEventListener("submit", e => {
+  e.preventDefault();
+
+  state.profile.codename = document.getElementById("codename").value.trim();
+  state.profile.specialty = document.getElementById("specialty").value;
+  state.profile.bio = document.getElementById("bio").value.trim();
+
+  saveState();
+  renderProfile();
+  toast("Agent profile updated.");
+});
+
+/* START */
+
+</script>
+</body>
+</html>
