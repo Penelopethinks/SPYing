@@ -1220,11 +1220,9 @@ function showPage(page) {
 
 async function logout() {
   archiveUnlocked = false;
-  await supabaseClient.auth.signOut();
   document.getElementById("app").classList.add("hidden");
   document.getElementById("bottomNav").classList.add("hidden");
   document.getElementById("login").classList.remove("hidden");
-  document.getElementById("authPassword").value = "";
 }
 
 // Local profile setup: no email, password, or Supabase account is required.
@@ -1257,40 +1255,6 @@ function enterApp() {
   renderAll();
   initializeMaps();
 }
-
-document.getElementById("loginForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const email = document.getElementById("authEmail").value.trim();
-  const password = document.getElementById("authPassword").value;
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) {
-    document.getElementById("loginError").textContent = error.message;
-    return;
-  }
-  enterApp();
-});
-
-document.getElementById("createAccountBtn").addEventListener("click", async () => {
-  const email = document.getElementById("authEmail").value.trim();
-  const password = document.getElementById("authPassword").value;
-  if (!email || password.length < 8) {
-    document.getElementById("loginError").textContent = "Enter an email and a password with at least 8 characters.";
-    return;
-  }
-  const { data, error } = await supabaseClient.auth.signUp({ email, password });
-  if (error) {
-    document.getElementById("loginError").textContent = error.message;
-    return;
-  }
-  document.getElementById("loginError").textContent = data.session
-    ? "Account created. You are signed in."
-    : "Account created. Check your email for the confirmation link, then sign in.";
-  if (data.session) enterApp();
-});
-
-supabaseClient.auth.getSession().then(({ data, error }) => {
-  if (!error && data.session) enterApp();
-});
 
 function renderAll() {
   renderHomeAgents();
