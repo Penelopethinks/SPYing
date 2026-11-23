@@ -769,10 +769,9 @@ label {
     <div class="login-subtitle">THE SPY NETWORK</div>
 
     <form id="setupForm">
-      <p class="muted">Sign in with your email and password to sync your agent profile.</p>
-      <!-- Authentication fields are rendered by the Supabase setup script. -->
+      <!-- Account fields are rendered below by the authentication script. -->
     </form>
-    <div id="loginError" class="login-error"></div>
+    <div id="loginError" class="login-error" role="status" aria-live="polite"></div>
     <div class="small muted">Use a made-up codename and a unique SPYing password. Never reuse your email or other account password.</div>
   </div>
 </section>
@@ -1223,20 +1222,37 @@ async function logout() {
 
 // Supabase authentication: accounts are required for cross-device data.
 const setupForm = document.getElementById("setupForm");
+let authMode = "signup";
 setupForm.innerHTML = `
-  <p class="muted">Create your agent identity with a codename, optional profile picture, and a password used only for SPYing.</p>
+  <p class="muted" id="authIntro">Create an account to set up your agent profile.</p>
   <label for="authEmail">Email</label>
   <input id="authEmail" class="field" type="email" autocomplete="email" required>
   <label for="authPassword">SPYing password</label>
-  <input id="authPassword" class="field" type="password" minlength="8" autocomplete="current-password" required>
-  <label for="newCodename">Codename (fake name)</label>
-  <input id="newCodename" class="field" maxlength="30" placeholder="Choose a codename" autocomplete="nickname" required>
-  <label for="avatarFile">Profile picture (optional)</label>
-  <input id="avatarFile" class="field" type="file" accept="image/*">
-  <div class="small muted">Use an avatar or image you have permission to use. Don’t upload private or identifying photos.</div>
-  <button class="btn" type="submit">Create Account</button>
-  <button class="btn secondary" type="button" id="signInButton">Sign In</button>
+  <input id="authPassword" class="field" type="password" minlength="8" autocomplete="new-password" required>
+  <div id="signupFields">
+    <label for="newCodename">Codename (made-up name)</label>
+    <input id="newCodename" class="field" maxlength="30" placeholder="Choose a codename" autocomplete="nickname" required>
+    <label for="avatarFile">Profile picture (optional)</label>
+    <input id="avatarFile" class="field" type="file" accept="image/*">
+    <div class="small muted">Use an avatar or image you have permission to use. Don’t upload private or identifying photos.</div>
+  </div>
+  <button class="btn" type="submit" id="authSubmit">Create Account</button>
+  <button class="btn secondary" type="button" id="authModeButton">Already have an account? Sign In</button>
 `;
+function setAuthMode(mode) {
+  authMode = mode;
+  const signingUp = mode === "signup";
+  document.getElementById("authIntro").textContent = signingUp
+    ? "Create an account with your email, a unique SPYing password, and a made-up codename."
+    : "Sign in with the email and SPYing password you used to create your account.";
+  document.getElementById("signupFields").classList.toggle("hidden", !signingUp);
+  document.getElementById("newCodename").required = signingUp;
+  document.getElementById("authPassword").autocomplete = signingUp ? "new-password" : "current-password";
+  document.getElementById("authSubmit").textContent = signingUp ? "Create Account" : "Sign In";
+  document.getElementById("authModeButton").textContent = signingUp ? "Already have an account? Sign In" : "Need an account? Create Account";
+  document.getElementById("loginError").textContent = "";
+}
+document.getElementById("authModeButton").addEventListener("click", () => setAuthMode(authMode === "signup" ? "signin" : "signup"));
 const supabase = window.supabase.createClient("https://onmgzinlqnefrsjdgrke.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ubWd6aW5scW5lZnJzamRncmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUzOTM2ODQsImV4cCI6MjExMDk2OTY4NH0.2V--EY4d9ahCqKATQ1-X9pnKKFrYqhGxHYqlYMXnE3M", { auth: { persistSession: false, autoRefreshToken: false } });
 window.supabaseRemoteEnabled = true;
 let currentUser = null;
@@ -1295,49 +1311,43 @@ async function completeSignIn(user) {
 setupForm.addEventListener("submit", async e => {
   e.preventDefault();
   const v = authFormValues();
-  if (!v.email || !v.password || !v.codename) return;
+  const errorBox = document.getElementById("loginError");
+  errorBox.textContent = "";
+  if (authMode === "signin") {
+    const { data, error } = await supabase.auth.signInWithPassword({ email: v.email, password: v.password });
+    if (error) { errorBox.textContent = error.message; return; }
+    const { data: profile, error: profileReadError } = await supabase.from("agent_profiles")
+      .select("user_id").eq("user_id", data.user.id).maybeSingle();
+    if (profileReadError) { errorBox.textContent = "Could not load your agent profile: " + profileReadError.message; return; }
+    if (!profile) {
+      const codename = data.user.user_metadata?.codename || v.email.split("@")[0] || "Agent";
+      const { error: profileError } = await supabase.from("agent_profiles").insert({
+        user_id: data.user.id, codename, specialty: "Intelligence Analyst", bio: ""
+      });
+      if (profileError) { errorBox.textContent = "Signed in, but profile setup failed: " + profileError.message; return; }
+    }
+    await completeSignIn(data.user);
+    return;
+  }
+
+  if (!v.codename) { errorBox.textContent = "Choose a made-up codename for your agent profile."; return; }
   let avatarData = "";
   try { avatarData = await imageFileToDataUrl(v.avatarFile); }
-  catch (err) { document.getElementById("loginError").textContent = err.message || "Could not read that image."; return; }
+  catch (err) { errorBox.textContent = err.message || "Could not read that image."; return; }
+
   const { data, error } = await supabase.auth.signUp({
     email: v.email, password: v.password,
     options: { data: { codename: v.codename } }
   });
-  if (error) {
-    document.getElementById("loginError").textContent = error.message;
-    return;
-  }
+  if (error) { errorBox.textContent = error.message; return; }
   if (!data.session) {
-    document.getElementById("loginError").textContent = "Check your email to confirm the account, then sign in.";
+    errorBox.textContent = "Account created. Check your email to confirm it, then return here and choose Sign In. Your codename is saved with the account.";
     return;
   }
-  const user = data.user;
   const { error: profileError } = await supabase.from("agent_profiles").upsert({
-    user_id: user.id, codename: v.codename, specialty: "Intelligence Analyst", bio: "", avatar_data: avatarData
+    user_id: data.user.id, codename: v.codename, specialty: "Intelligence Analyst", bio: "", avatar_data: avatarData
   });
-  if (profileError) {
-    document.getElementById("loginError").textContent = "Account created, but profile setup failed: " + profileError.message;
-    return;
-  }
-  await completeSignIn(user);
-});
-document.getElementById("signInButton").addEventListener("click", async () => {
-  const v = authFormValues();
-  const { data, error } = await supabase.auth.signInWithPassword({ email: v.email, password: v.password });
-  if (error) {
-    document.getElementById("loginError").textContent = error.message;
-    return;
-  }
-  const { data: profile } = await supabase.from("agent_profiles").select("user_id").eq("user_id", data.user.id).maybeSingle();
-  if (!profile) {
-    const { error: profileError } = await supabase.from("agent_profiles").insert({
-      user_id: data.user.id, codename: v.codename || "Agent", specialty: "Intelligence Analyst", bio: ""
-    });
-    if (profileError) {
-      document.getElementById("loginError").textContent = profileError.message;
-      return;
-    }
-  }
+  if (profileError) { errorBox.textContent = "Account created, but profile setup failed: " + profileError.message; return; }
   await completeSignIn(data.user);
 });
 // Do not auto-enter from a remembered session: ask for credentials on every visit.
