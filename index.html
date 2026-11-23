@@ -1259,7 +1259,7 @@ async function loadRemoteProfileAndAgents() {
   state.agents = (profiles || []).map(p => ({
     id: p.user_id, user_id: p.user_id, name: p.codename, rank: "Agent",
     specialty: p.specialty || "Agent", status: "Connected",
-    lat: 47.6588, lng: -117.4260, color: "#55ff9b"
+    lat: null, lng: null, color: "#55ff9b"
   }));
   renderAll();
 }
@@ -1449,6 +1449,7 @@ function addAgentMarkers(map, markerArray) {
   markerArray.length = 0;
 
   state.agents.forEach(agent => {
+    if (!Number.isFinite(agent.lat) || !Number.isFinite(agent.lng)) return;
     const marker = L.marker([agent.lat, agent.lng], {
       icon: makeAgentIcon(agent.color)
     }).addTo(map);
