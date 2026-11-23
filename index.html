@@ -953,7 +953,7 @@ label {
   <!-- MESSAGES -->
   <section id="page-messages" class="page">
     <h2 class="page-title">Secure Communications</h2>
-    <p class="page-intro">Private demo conversations with agents in your network.</p>
+    <p class="page-intro">Messages sync between signed-in agents. Use fictional codenames and avoid sharing personal details.</p>
 
     <div class="chat-layout">
       <div class="panel chat-list" id="chatList"></div>
@@ -961,7 +961,7 @@ label {
       <div class="panel chat-window">
         <div class="panel-head">
           <h2 id="chatTitle">Select an agent</h2>
-          <span class="badge">Demo Chat</span>
+          <span class="badge">Synced Chat</span>
         </div>
         <div id="chatMessages" class="chat-messages"></div>
         <form id="chatForm" class="chat-compose">
@@ -1315,7 +1315,7 @@ document.getElementById("signInButton").addEventListener("click", async () => {
   await completeSignIn(data.user);
 });
 supabase.auth.onAuthStateChange((_event, session) => {
-  if (session?.user && !currentUser) completeSignIn(session.user);
+  if (session?.user && !currentUser) setTimeout(() => completeSignIn(session.user), 0);
 });
 
 function enterApp() {
@@ -1868,10 +1868,13 @@ async function refreshRemoteMessages() {
   }));
   renderMessages();
 }
+let messageRefreshTimer = null;
 const originalOpenChat = openChat;
 openChat = function(id) {
   originalOpenChat(id);
   refreshRemoteMessages();
+  if (messageRefreshTimer) clearInterval(messageRefreshTimer);
+  messageRefreshTimer = setInterval(refreshRemoteMessages, 5000);
 };
 const originalRenderChats = renderChats;
 renderChats = function() {
@@ -1886,6 +1889,8 @@ logout = async function() {
   await supabase.auth.signOut();
   currentUser = null;
   selectedChat = null;
+  if (messageRefreshTimer) clearInterval(messageRefreshTimer);
+  messageRefreshTimer = null;
   await originalLogout();
 };
 
