@@ -769,27 +769,14 @@ label {
     <div class="login-subtitle">THE SPY NETWORK</div>
 
     <form id="setupForm">
-      <p class="muted">Create your agent identity. Use a fictional codename.</p>
-      <label for="realName">Your real name</label>
+      <p class="muted">Create your agent profile. Only these three details are needed.</p>
+      <label for="realName">Your name</label>
       <input id="realName" class="field" maxlength="60" autocomplete="name" required>
-      <label for="newCodename">Your fake name / codename</label>
-      <input id="newCodename" class="field" maxlength="30" placeholder="e.g. Agent Raven" required>
-      <label for="newSpecialty">What kind of spy are you?</label>
-      <select id="newSpecialty" class="field" required>
-        <option>Intelligence Analyst</option><option>Field Agent</option>
-        <option>Cryptographer</option><option>Investigator</option>
-        <option>Mission Director</option>
-      </select>
-      <button class="btn" type="submit">Save Identity & Continue</button>
-    </form>
-    <form id="loginForm" class="hidden">
-      <p class="muted">Use an email and password to create an account or sign in.</p>
-      <label for="authEmail">Email</label>
-      <input id="authEmail" class="field" type="email" autocomplete="email" required>
-      <label for="authPassword">Password</label>
-      <input id="authPassword" class="field" type="password" minlength="8" autocomplete="current-password" required>
-      <button class="btn" type="submit">Sign In</button>
-      <button class="btn secondary" type="button" id="createAccountBtn">Create Account</button>
+      <label for="newCodename">Agent name</label>
+      <input id="newCodename" class="field" maxlength="30" placeholder="Choose a codename" required>
+      <label for="newAge">Your age</label>
+      <input id="newAge" class="field" type="number" min="1" max="120" inputmode="numeric" required>
+      <button class="btn" type="submit">Create Profile & Enter</button>
     </form>
     <div id="loginError" class="login-error"></div>
     <div class="small muted">Your identity is saved in this browser on this device.</div>
@@ -1240,34 +1227,27 @@ async function logout() {
   document.getElementById("authPassword").value = "";
 }
 
-// First visit: collect an agent identity before showing the passcode form.
+// Local profile setup: no email, password, or Supabase account is required.
 const setupForm = document.getElementById("setupForm");
-const loginForm = document.getElementById("loginForm");
-function showEntryStep() {
-  const hasIdentity = !!(state.profile.realName && state.profile.codename && state.profile.specialty);
-  setupForm.classList.toggle("hidden", hasIdentity);
-  loginForm.classList.toggle("hidden", !hasIdentity);
-  if (hasIdentity) {
-    document.getElementById("realName").value = state.profile.realName;
-    document.getElementById("newCodename").value = state.profile.codename;
-    document.getElementById("newSpecialty").value = state.profile.specialty;
-  }
-}
+document.getElementById("realName").value = state.profile.realName || "";
+document.getElementById("newCodename").value = state.profile.codename === "Agent Raven" ? "" : state.profile.codename;
+document.getElementById("newAge").value = state.profile.age || "";
+
 setupForm.addEventListener("submit", e => {
   e.preventDefault();
-  state.profile.realName = document.getElementById("realName").value.trim();
-  state.profile.codename = document.getElementById("newCodename").value.trim();
-  state.profile.specialty = document.getElementById("newSpecialty").value;
-  if (!state.profile.realName || !state.profile.codename) return;
+  const name = document.getElementById("realName").value.trim();
+  const codename = document.getElementById("newCodename").value.trim();
+  const age = Number(document.getElementById("newAge").value);
+  if (!name || !codename || !Number.isInteger(age) || age < 1 || age > 120) {
+    document.getElementById("loginError").textContent = "Please enter your name, agent name, and a valid age.";
+    return;
+  }
+  state.profile.realName = name;
+  state.profile.codename = codename;
+  state.profile.age = age;
   saveState();
-  document.getElementById("loginError").textContent = "";
-  showEntryStep();
+  enterApp();
 });
-showEntryStep();
-
-const SUPABASE_URL = "https://onmgzinlqnefrsjdgrke.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_3gPubQv5iMgWTGHfdXwM0Q_xab8_pOC";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 function enterApp() {
   document.getElementById("loginError").textContent = "";
