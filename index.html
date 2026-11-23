@@ -1460,8 +1460,9 @@ function initializeMaps() {
     return;
   }
 
-  const center = [20, 0];
-  const startZoom = 2;
+  // Start over Spokane; users can pan and zoom freely from this view.
+  const center = [47.6588, -117.4260];
+  const startZoom = 11;
   // Use standard OSM tiles for a real, draggable Leaflet map (not a static image).
   const tileUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
   const tileOptions = {
