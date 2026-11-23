@@ -1214,6 +1214,8 @@ function showPage(page) {
 
 async function logout() {
   archiveUnlocked = false;
+  currentUser = null;
+  await supabase.auth.signOut({ scope: "local" });
   document.getElementById("app").classList.add("hidden");
   document.getElementById("bottomNav").classList.add("hidden");
   document.getElementById("login").classList.remove("hidden");
@@ -1235,7 +1237,7 @@ setupForm.innerHTML = `
   <button class="btn" type="submit">Create Account</button>
   <button class="btn secondary" type="button" id="signInButton">Sign In</button>
 `;
-const supabase = window.supabase.createClient("https://onmgzinlqnefrsjdgrke.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ubWd6aW5scW5lZnJzamRncmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUzOTM2ODQsImV4cCI6MjExMDk2OTY4NH0.2V--EY4d9ahCqKATQ1-X9pnKKFrYqhGxHYqlYMXnE3M");
+const supabase = window.supabase.createClient("https://onmgzinlqnefrsjdgrke.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ubWd6aW5scW5lZnJzamRncmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUzOTM2ODQsImV4cCI6MjExMDk2OTY4NH0.2V--EY4d9ahCqKATQ1-X9pnKKFrYqhGxHYqlYMXnE3M", { auth: { persistSession: false, autoRefreshToken: false } });
 window.supabaseRemoteEnabled = true;
 let currentUser = null;
 
@@ -1338,9 +1340,8 @@ document.getElementById("signInButton").addEventListener("click", async () => {
   }
   await completeSignIn(data.user);
 });
-supabase.auth.onAuthStateChange((_event, session) => {
-  if (session?.user && !currentUser) setTimeout(() => completeSignIn(session.user), 0);
-});
+// Do not auto-enter from a remembered session: ask for credentials on every visit.
+// Auth state stays in memory only and is not restored from browser storage.
 
 function enterApp() {
   document.getElementById("loginError").textContent = "";
